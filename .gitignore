@@ -35,3 +35,10 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+
+# Secret data
+src/secret.ts
+
+# Mac specific
+.DS_STORE

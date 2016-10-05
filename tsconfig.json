@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "sourceMap": true,
+        "outFile": "./build/build.js",
+        "sourceRoot": "./src/",
+        "rootDir": "./src/"
+    }/*,
+    "file": [
+        "main.ts",
+        "telegram-bot.ts"
+    ]*/
+}
