@@ -91,6 +91,7 @@ module Spotify {
         public name: string;
         public type: string;
         public uri: string;
+        public spotifyExternalURL: string;
 
         public static getFromPlainJSObject(data): Album {
             let album = new Album();
@@ -99,6 +100,7 @@ module Spotify {
             album.href = data.href;
             album.id = data.id;
             album.images = Image.getArrayFromPlainJSObject(data.images);
+            album.spotifyExternalURL = data.external_urls.spotify;
             album.name = data.name;
             album.type = data.type;
             album.uri = data.uri;

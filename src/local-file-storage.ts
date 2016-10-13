@@ -1,4 +1,5 @@
 ///<reference path='./spotify.ts'/>
+///<reference path='./telegram.ts'/>
 
 module DataBase {
     "use strict";
@@ -8,10 +9,12 @@ module DataBase {
 
     export class LocalFileStorage {
         private static dataDir = "./data";
+        private static telegramData = "./data/telegram";
         private static dataFileType = "txt";
 
         constructor() {
             LocalFileStorage.createDirectory(LocalFileStorage.dataDir);
+            LocalFileStorage.createDirectory(LocalFileStorage.telegramData);
         }
 
         public static createDirectory(dir: string) {
@@ -25,7 +28,7 @@ module DataBase {
                 throw new Error("Invalid artistID");
             }
             return new Promise<void>(((resolve, reject) => {
-                let filePath = LocalFileStorage.getPath(artistID);
+                let filePath = LocalFileStorage.getArtistPath(artistID);
                 fs.writeFile(filePath, this.albumsToString(albums), function(error) {
                     if (error) {
                         reject(error);
@@ -44,7 +47,7 @@ module DataBase {
             return result;
         }
 
-        private static getPath(artistID: string) {
+        private static getArtistPath(artistID: string) {
             return path.join(
                 LocalFileStorage.dataDir, 
                 artistID + "." + LocalFileStorage.dataFileType);
@@ -52,7 +55,7 @@ module DataBase {
 
         public getArtistsAlbums(artistID: string) {
             return new Promise<Array<string>>(((resolve, reject) => {
-                let path = LocalFileStorage.getPath(artistID);
+                let path = LocalFileStorage.getArtistPath(artistID);
                 fs.exists(path, (exists: boolean) => { // check whether a file exists for the given artist
                     if (exists) {
                         fs.readFile(path, 'utf8', (error, data) => {
@@ -65,6 +68,81 @@ module DataBase {
                     }
                     else {
                         resolve(new Array<string>());
+                    }
+                });
+            }).bind(this));
+        }
+
+
+        // Telegram
+
+        private static getBotPath(bot: Telegram.Bot) {
+            return path.join(
+                LocalFileStorage.telegramData, 
+                bot.getName() + "." + LocalFileStorage.dataFileType);
+        }
+
+        private chatIDsToString(chatIDs: number[]): string {
+            let output = "";
+            for (let i = 0; i < chatIDs.length; i++) {
+                output += ((i === 0) ? '' : '\n') + chatIDs[i];
+            }
+            return output;
+        }
+
+        public async addSubscriber(bot: Telegram.Bot, chatID: number) {
+            let subscribers: number[] = await this.getSubscibers(bot);
+            if (subscribers.indexOf(chatID) === -1) {
+                subscribers.push(chatID);
+            }
+            await this.setSubscribers(bot, subscribers);
+        }
+
+        public async removeSubscriber(bot: Telegram.Bot, chatID: number) {
+            let subscribers: number[] = await this.getSubscibers(bot);
+            if (subscribers.indexOf(chatID) !== -1) {
+                subscribers.splice(subscribers.indexOf(chatID), 1);
+            }
+            await this.setSubscribers(bot, subscribers);
+        }
+
+        public async setSubscribers(bot: Telegram.Bot, chatIDs: number[]) {
+            return new Promise<Array<void>>(((resolve, reject) => {
+                let path = LocalFileStorage.getBotPath(bot);
+                fs.writeFile(path, this.chatIDsToString(chatIDs), function(error) {
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+                    resolve();
+                }); 
+            }).bind(this));
+        }
+
+        public async getSubscibers(bot: Telegram.Bot) {
+            return new Promise<Array<number>>(((resolve, reject) => {
+                let path = LocalFileStorage.getBotPath(bot);
+                fs.exists(path, (exists: boolean) => { // check whether a file exists for the given artist
+                    if (exists) {
+                        fs.readFile(path, 'utf8', (error, data) => {
+                            if (error) {
+                                reject(error);
+                                return;
+                            }
+                            let charIDsRaw: string[] = data.split('\n');
+                            let charIDs: number[] = new Array<number>();
+                            for (let i = 0; i < charIDsRaw.length; i++) {
+                                let parsed: number = parseInt(charIDsRaw[i]);
+                                if (isNaN(parsed)) {
+                                    continue;
+                                }
+                                charIDs.push(parsed);
+                            }
+                            resolve(charIDs);
+                        });
+                    }
+                    else {
+                        resolve(new Array<number>());
                     }
                 });
             }).bind(this));
