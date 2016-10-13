@@ -1,31 +1,32 @@
 /// <reference path="require.d.ts" />
 /// <reference path="request.d.ts" />
 
-var request = require('request');
+const request = require('request');
 
 module Spotify {
     "use strict";
 
     export class Artist {
         private albums: Array<Album>;
-        private artistURL: string;
+        
+        constructor(private artistID: string) { }
 
-        constructor(artistURL: string) {
-            this.artistURL = artistURL;
+        public getAlbums() {
+            return this.albums;
+        }
+
+        public getID(): string {
+            return this.artistID;
         }
 
         public async downloadAlbums() {
-            let downloader = new AlbumArrayDownloader(this.artistURL);
+            let downloader = new AlbumArrayDownloader(this.artistID);
             try {
                 this.albums = await downloader.run();
             }
             catch (error) {
                 console.log(error);
             }
-        }
-
-        public getAlbums() {
-            return this.albums;
         }
     }
 
@@ -34,8 +35,8 @@ module Spotify {
         private offset: number = 0;
         private artistURL: string;
 
-        constructor(artistURL: string) {
-            this.artistURL = artistURL;
+        constructor(artistID: string) {
+            this.artistURL = AlbumArrayDownloader.getAlbumURL(artistID);
         }
 
         public run() {
@@ -43,7 +44,7 @@ module Spotify {
         }
 
         private download(resolve, reject) {
-            console.log(this.artistURL  + '?offset=' + this.offset);
+            console.log("request " + this.artistURL  + '?offset=' + this.offset);
             request(this.artistURL  + '?offset=' + this.offset, (function(error, response, json) {
                 if (error) {
                     console.log(error);
@@ -53,16 +54,13 @@ module Spotify {
 
                 try {
                     var body = JSON.parse(json);
-                    console.log(body);
                 }
                 catch (error) {
                     reject(error);
                     return;
                 }
 
-                console.log(this);
                 this.addRawItems(body.items);
-                console.log(this.downloaded.length);
                 if (this.downloaded.length >= body.total || body.offset + body.limit > body.total) {
                     resolve(this.downloaded);
                 }
@@ -78,6 +76,10 @@ module Spotify {
                 this.downloaded.push(Album.getFromPlainJSObject(items[i]));
             }
         }
+
+        public static getAlbumURL(artistID: string): string {
+            return "https://api.spotify.com/v1/artists/" + artistID + "/albums";
+        }
     }
 
     export class Album {
@@ -92,11 +94,11 @@ module Spotify {
 
         public static getFromPlainJSObject(data): Album {
             let album = new Album();
-            album.albumType = data.albumType;
-            album.availableMarkets = data.availableMarkets;
+            album.albumType = data.album_type;
+            album.availableMarkets = data.available_markets;
             album.href = data.href;
             album.id = data.id;
-            album.images = data.images;
+            album.images = Image.getArrayFromPlainJSObject(data.images);
             album.name = data.name;
             album.type = data.type;
             album.uri = data.uri;
@@ -109,8 +111,18 @@ module Spotify {
             private height: number, 
             private width: number,
             private URL: string
-        ) {
+        ) { }
 
+        public static getFromPlainJSObject(data): Image {
+            return new Image(data.height, data.width, data.url);
+        }
+
+        public static getArrayFromPlainJSObject(dataArray): Array<Image> {
+            let images = new Array<Image>();
+            for (var i = 0; i < dataArray.length; i++) {
+                images.push(Image.getFromPlainJSObject(dataArray[i]));
+            }
+            return images;
         }
     }
 }
