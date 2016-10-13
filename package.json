@@ -1,0 +1,37 @@
+{
+  "name": "die-drei-fragezeichen-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot that broadcasts notification when there are new Die drei ??? episodes available on Spotify.",
+  "main": "app.js",
+  "dependencies": {
+    "cron": "^1.1.1",
+    "fs": "0.0.1-security",
+    "node-cron": "^1.1.2",
+    "node-telegram-bot-api": "^0.24.0",
+    "path": "^0.12.7",
+    "request": "^2.75.0",
+    "telegram-node-bot": "^4.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Simsso/Die-drei-Fragezeichen-Telegram-bot.git"
+  },
+  "keywords": [
+    "spotify",
+    "telegram",
+    "die",
+    "drei",
+    "fragezeichen",
+    "bot"
+  ],
+  "author": "Timo Denk",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Simsso/Die-drei-Fragezeichen-Telegram-bot/issues"
+  },
+  "homepage": "https://github.com/Simsso/Die-drei-Fragezeichen-Telegram-bot#readme"
+}

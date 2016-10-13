@@ -45,7 +45,7 @@ var Spotify;
             return new Promise(this.download.bind(this));
         }
         download(resolve, reject) {
-            console.log("request " + this.artistURL + '?offset=' + this.offset);
+            //console.log("request " + this.artistURL  + '?offset=' + this.offset);
             request(this.artistURL + '?offset=' + this.offset, (function (error, response, json) {
                 if (error) {
                     console.log(error);
@@ -370,7 +370,7 @@ var Notification;
             return __awaiter(this, void 0, void 0, function* () {
                 let storage = new DataBase.LocalFileStorage();
                 let subscribers = yield storage.getSubscibers(this.bot);
-                let message = this.album.name + ' is now available: ' + this.album.href;
+                let message = this.album.name + ' is now available: ' + this.album.spotifyExternalURL;
                 for (let i = 0; i < subscribers.length; i++) {
                     this.bot.sendMessage(subscribers[i], message);
                 }
@@ -389,19 +389,28 @@ var SpotifyArtistWatch;
         static main() {
             console.log("running");
             App.startBot();
-            setTimeout(App.checkForChanges, 10000);
+            var CronJob = require('cron').CronJob;
+            var job = new CronJob({
+                cronTime: '00 0 0-23 * * *',
+                onTick: App.checkForChanges.bind(this),
+                start: false
+            });
+            job.start();
         }
         static checkForChanges() {
             return __awaiter(this, void 0, void 0, function* () {
+                console.log("checking for changes");
                 App.watchedArtists.map((artistID) => __awaiter(this, void 0, void 0, function* () {
                     let comparator = new SpotifyArtistWatch.Comparator(artistID);
                     yield comparator.compare();
                     let addedAlbums = comparator.getAddedAlbums();
                     comparator.save();
+                    if (addedAlbums.length !== 0) {
+                        console.log("new albums found");
+                    }
                     addedAlbums.map((album) => __awaiter(this, void 0, void 0, function* () {
                         let notification = new Notification.Album(App.bot, album);
                         yield notification.broadcast();
-                        console.log("message broadcasted");
                     }));
                 }));
             });

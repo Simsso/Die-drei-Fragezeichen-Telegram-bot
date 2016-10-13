@@ -44,7 +44,7 @@ module Spotify {
         }
 
         private download(resolve, reject) {
-            console.log("request " + this.artistURL  + '?offset=' + this.offset);
+            //console.log("request " + this.artistURL  + '?offset=' + this.offset);
             request(this.artistURL  + '?offset=' + this.offset, (function(error, response, json) {
                 if (error) {
                     console.log(error);

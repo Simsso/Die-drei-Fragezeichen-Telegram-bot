@@ -13,19 +13,29 @@ module SpotifyArtistWatch {
             console.log("running");
 
             App.startBot();
-            setTimeout(App.checkForChanges, 10000);
+
+            var CronJob = require('cron').CronJob;
+            var job = new CronJob({
+                cronTime: '00 0 0-23 * * *',
+                onTick: App.checkForChanges.bind(this),
+                start: false
+            });
+            job.start();
         }
 
         public static async checkForChanges() {
+            console.log("checking for changes");
             App.watchedArtists.map(async (artistID: string) => {
                 let comparator = new Comparator(artistID);
                 await comparator.compare();
                 let addedAlbums: Spotify.Album[] = comparator.getAddedAlbums();
                 comparator.save();
+                if (addedAlbums.length !== 0) {
+                    console.log("new albums found");
+                }
                 addedAlbums.map(async (album: Spotify.Album) => {
                     let notification: Notification.Album = new Notification.Album(App.bot, album);
                     await notification.broadcast();
-                    console.log("message broadcasted");
                 });
             });
         }
@@ -34,5 +44,6 @@ module SpotifyArtistWatch {
             this.bot = new Telegram.Bot("DieDreiFragezeichenBot", Secret.DieDreiFragezeichenBotToken);
         }
     }
+    
     App.main();
 }
