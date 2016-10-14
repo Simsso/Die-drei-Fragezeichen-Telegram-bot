@@ -21,6 +21,7 @@ module SpotifyArtistWatch {
                 start: false
             });
             job.start();
+            App.checkForChanges();
         }
 
         public static async checkForChanges() {
@@ -32,6 +33,11 @@ module SpotifyArtistWatch {
                 comparator.save();
                 if (addedAlbums.length !== 0) {
                     console.log("new albums found");
+                    addedAlbums.sort((a: Spotify.Album, b: Spotify.Album) => {
+                        let aNr:number = a.getDieDreiFragezeichenEpisodeNumber(), bNr: number = b.getDieDreiFragezeichenEpisodeNumber();
+                        if (aNr < bNr || isNaN(aNr) && isNaN(bNr)) return -1;
+                        else return 1;
+                    });
                     let notification: Notification.Album = new Notification.Album(App.bot, addedAlbums);
                     await notification.broadcast();
                 }

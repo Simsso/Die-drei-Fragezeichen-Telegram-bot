@@ -8,16 +8,24 @@ module Notification {
     export class Album {
         constructor(private bot: Telegram.Bot, private albums: Spotify.Album[]) { }
 
+        public async sendTo(chatID: number) {
+            for (let i = 0; i < this.albums.length; i++) {
+                let message: string = Album.getMessageByAlbum(this.albums[i]);
+                this.bot.sendMessage(chatID, message);
+            }
+        }
+
         public async broadcast() {
             let storage: DataBase.LocalFileStorage = new DataBase.LocalFileStorage();
             let subscribers: number[] = await storage.getSubscibers(this.bot);
 
             for (let i = 0; i < subscribers.length; i++) {
-                for (let j = 0; j < this.albums.length; j++) {
-                    let message: string = this.albums[j].name + ' is now available: ' + this.albums[j].spotifyExternalURL;
-                    this.bot.sendMessage(subscribers[i], message);
-                }
+                await this.sendTo(subscribers[i]);
             }
+        }
+
+        private static getMessageByAlbum(album: Spotify.Album): string {
+            return album.name + ' is now available: ' + album.spotifyExternalURL;
         }
     }
 

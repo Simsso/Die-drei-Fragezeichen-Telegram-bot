@@ -8,10 +8,10 @@ module Telegram {
     export class Bot {
         private tg;
 
-        private outbox: Message[];
+        private outbox: Message[] = new Array<Message>();
 
         private timeLastMessageSent: Date = new Date();
-        private static minTimeBetweenMessages: number = 500; // milliseconds
+        private static minTimeBetweenMessages: number = 1000; // milliseconds
 
         constructor(private name: string, private token: string) {
             const Telegram = require('telegram-node-bot')
@@ -25,9 +25,12 @@ module Telegram {
                     let storage: DataBase.LocalFileStorage = new DataBase.LocalFileStorage();
                     let chatID: number = $._chatId;
                     storage.addSubscriber(bot, chatID);
-                    bot.sendMessage(chatID, "subscribed");
+                    bot.sendMessage(chatID, "Subscribed successfully. You'll get an update as soon as there are new episodes available.");
                 }
                 get routes() { return { 'startCommand': 'startHandler' } }
+                handle($) {
+                    this.startHandler($);
+                }
             }
 
             class StopController extends TelegramBaseController {
@@ -35,13 +38,32 @@ module Telegram {
                     let storage: DataBase.LocalFileStorage = new DataBase.LocalFileStorage();
                     let chatID: number = $._chatId;
                     storage.removeSubscriber(bot, chatID);
-                    bot.sendMessage(chatID, "unsubscribed");
+                    bot.sendMessage(chatID, "Unsubscribed.");
                 }
                 get routes() { return { 'stopCommand': 'stopHandler' } }
             }
 
-            this.tg.router.when(new TextCommand('start', 'startCommand'), new StartController());
-            this.tg.router.when(new TextCommand('stop', 'stopCommand'), new StopController());
+            class DebugController extends TelegramBaseController {
+                debugHandler($) {
+                    let chatID: number = $._chatId;
+                    bot.sendMessage(chatID, "Your chat ID is " + chatID.toString());
+                }
+                get routes() { return { 'debugCommand': 'debugHandler' } }
+            }
+
+            class HelpController extends TelegramBaseController {
+                helpHandler($) {
+                    let chatID: number = $._chatId;
+                    bot.sendMessage(chatID, "This bot sends an update when there are new \"Die drei Fragezeichen\" episodes available on Spotify.");
+                }
+                get routes() { return { 'helpCommand': 'helpHandler' } }
+            }
+
+            this.tg.router.when(new TextCommand('start', 'startCommand'), new StartController())
+                .when(new TextCommand('stop', 'stopCommand'), new StopController())
+                .when(new TextCommand('debug', 'debugCommand'), new DebugController())
+                .when(new TextCommand('help', 'helpCommand'), new HelpController())
+                .otherwise(new StartController());
         }
 
         public getName(): string {
@@ -60,9 +82,10 @@ module Telegram {
                 this.timeLastMessageSent = new Date();
                 let message: Message = this.outbox.shift();
                 this.tg.api.sendMessage(message.getChatID(), message.getMsg());
+                console.log(this.timeLastMessageSent.getTime() + ": message to " + message.getChatID() + " sent: " + message.getMsg());
             }
             else {
-                setTimeout(this.tryToSendMessage, Telegram.Bot.minTimeBetweenMessages);
+                setTimeout(this.tryToSendMessage.bind(this), Telegram.Bot.minTimeBetweenMessages);
             }
         }
 

@@ -106,6 +106,18 @@ module Spotify {
             album.uri = data.uri;
             return album;
         }
+
+        public getDieDreiFragezeichenEpisodeNumber(): number {
+            let parts:string[] = this.name.split('/');
+            if (parts.length !== 2) {
+                return NaN;
+            }
+            try {
+                return parseInt(parts[0]);
+            } catch (e) {
+                return NaN;
+            }
+        }
     }
 
     export class Image {

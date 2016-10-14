@@ -92,6 +92,18 @@ var Spotify;
             album.uri = data.uri;
             return album;
         }
+        getDieDreiFragezeichenEpisodeNumber() {
+            let parts = this.name.split('/');
+            if (parts.length !== 2) {
+                return NaN;
+            }
+            try {
+                return parseInt(parts[0]);
+            }
+            catch (e) {
+                return NaN;
+            }
+        }
     }
     Spotify.Album = Album;
     class Image {
@@ -127,6 +139,8 @@ var Telegram;
         constructor(name, token) {
             this.name = name;
             this.token = token;
+            this.outbox = new Array();
+            this.timeLastMessageSent = new Date();
             const Telegram = require('telegram-node-bot');
             const TelegramBaseController = Telegram.TelegramBaseController;
             const TextCommand = Telegram.TextCommand;
@@ -137,30 +151,77 @@ var Telegram;
                     let storage = new DataBase.LocalFileStorage();
                     let chatID = $._chatId;
                     storage.addSubscriber(bot, chatID);
-                    $.sendMessage('subscribed');
+                    bot.sendMessage(chatID, "Subscribed successfully. You'll get an update as soon as there are new episodes available.");
                 }
                 get routes() { return { 'startCommand': 'startHandler' }; }
+                handle($) {
+                    this.startHandler($);
+                }
             }
             class StopController extends TelegramBaseController {
                 stopHandler($) {
                     let storage = new DataBase.LocalFileStorage();
                     let chatID = $._chatId;
                     storage.removeSubscriber(bot, chatID);
-                    $.sendMessage('unsubscribed');
+                    bot.sendMessage(chatID, "Unsubscribed.");
                 }
                 get routes() { return { 'stopCommand': 'stopHandler' }; }
             }
-            this.tg.router.when(new TextCommand('start', 'startCommand'), new StartController());
-            this.tg.router.when(new TextCommand('stop', 'stopCommand'), new StopController());
+            class DebugController extends TelegramBaseController {
+                debugHandler($) {
+                    let chatID = $._chatId;
+                    bot.sendMessage(chatID, "Your chat ID is " + chatID.toString());
+                }
+                get routes() { return { 'debugCommand': 'debugHandler' }; }
+            }
+            class HelpController extends TelegramBaseController {
+                helpHandler($) {
+                    let chatID = $._chatId;
+                    bot.sendMessage(chatID, "This bot sends an update when there are new \"Die drei Fragezeichen\" episodes available on Spotify.");
+                }
+                get routes() { return { 'helpCommand': 'helpHandler' }; }
+            }
+            this.tg.router.when(new TextCommand('start', 'startCommand'), new StartController())
+                .when(new TextCommand('stop', 'stopCommand'), new StopController())
+                .when(new TextCommand('debug', 'debugCommand'), new DebugController())
+                .when(new TextCommand('help', 'helpCommand'), new HelpController())
+                .otherwise(new StartController());
         }
         getName() {
             return this.name;
         }
         sendMessage(chatID, msg) {
-            this.tg.api.sendMessage(chatID, msg);
+            this.outbox.push(new Message(chatID, msg));
+            this.tryToSendMessage();
+        }
+        tryToSendMessage() {
+            if (this.outbox.length === 0)
+                return;
+            if (this.timeLastMessageSent.getTime() + Telegram.Bot.minTimeBetweenMessages < Date.now()) {
+                this.timeLastMessageSent = new Date();
+                let message = this.outbox.shift();
+                this.tg.api.sendMessage(message.getChatID(), message.getMsg());
+                console.log(this.timeLastMessageSent.getTime() + ": message to " + message.getChatID() + " sent: " + message.getMsg());
+            }
+            else {
+                setTimeout(this.tryToSendMessage.bind(this), Telegram.Bot.minTimeBetweenMessages);
+            }
         }
     }
+    Bot.minTimeBetweenMessages = 1000; // milliseconds
     Telegram_1.Bot = Bot;
+    class Message {
+        constructor(chatID, msg) {
+            this.chatID = chatID;
+            this.msg = msg;
+        }
+        getChatID() {
+            return this.chatID;
+        }
+        getMsg() {
+            return this.msg;
+        }
+    }
 })(Telegram || (Telegram = {}));
 ///<reference path='./spotify.ts'/>
 ///<reference path='./telegram.ts'/>
@@ -362,22 +423,38 @@ var Notification;
 (function (Notification) {
     "use strict";
     class Album {
-        constructor(bot, album) {
+        constructor(bot, albums) {
             this.bot = bot;
-            this.album = album;
+            this.albums = albums;
+        }
+        sendTo(chatID) {
+            return __awaiter(this, void 0, void 0, function* () {
+                for (let i = 0; i < this.albums.length; i++) {
+                    let message = Album.getMessageByAlbum(this.albums[i]);
+                    this.bot.sendMessage(chatID, message);
+                }
+            });
         }
         broadcast() {
             return __awaiter(this, void 0, void 0, function* () {
                 let storage = new DataBase.LocalFileStorage();
                 let subscribers = yield storage.getSubscibers(this.bot);
-                let message = this.album.name + ' is now available: ' + this.album.spotifyExternalURL;
                 for (let i = 0; i < subscribers.length; i++) {
-                    this.bot.sendMessage(subscribers[i], message);
+                    yield this.sendTo(subscribers[i]);
                 }
             });
         }
+        static getMessageByAlbum(album) {
+            return album.name + ' is now available: ' + album.spotifyExternalURL;
+        }
     }
     Notification.Album = Album;
+    function delay(ms) {
+        return new Promise((resolve, reject) => {
+            setTimeout(resolve, ms);
+        });
+    }
+    Notification.delay = delay;
 })(Notification || (Notification = {}));
 ///<reference path='./compare-logic.ts'/>
 ///<reference path='./telegram.ts'/>
@@ -396,6 +473,7 @@ var SpotifyArtistWatch;
                 start: false
             });
             job.start();
+            App.checkForChanges();
         }
         static checkForChanges() {
             return __awaiter(this, void 0, void 0, function* () {
@@ -407,11 +485,16 @@ var SpotifyArtistWatch;
                     comparator.save();
                     if (addedAlbums.length !== 0) {
                         console.log("new albums found");
-                    }
-                    addedAlbums.map((album) => __awaiter(this, void 0, void 0, function* () {
-                        let notification = new Notification.Album(App.bot, album);
+                        addedAlbums.sort((a, b) => {
+                            let aNr = a.getDieDreiFragezeichenEpisodeNumber(), bNr = b.getDieDreiFragezeichenEpisodeNumber();
+                            if (aNr < bNr || isNaN(aNr) && isNaN(bNr))
+                                return -1;
+                            else
+                                return 1;
+                        });
+                        let notification = new Notification.Album(App.bot, addedAlbums);
                         yield notification.broadcast();
-                    }));
+                    }
                 }));
             });
         }
