@@ -8,6 +8,11 @@ module Telegram {
     export class Bot {
         private tg;
 
+        private outbox: Message[];
+
+        private timeLastMessageSent: Date = new Date();
+        private static minTimeBetweenMessages: number = 500; // milliseconds
+
         constructor(private name: string, private token: string) {
             const Telegram = require('telegram-node-bot')
             const TelegramBaseController = Telegram.TelegramBaseController
@@ -20,7 +25,7 @@ module Telegram {
                     let storage: DataBase.LocalFileStorage = new DataBase.LocalFileStorage();
                     let chatID: number = $._chatId;
                     storage.addSubscriber(bot, chatID);
-                    $.sendMessage('subscribed');
+                    bot.sendMessage(chatID, "subscribed");
                 }
                 get routes() { return { 'startCommand': 'startHandler' } }
             }
@@ -30,7 +35,7 @@ module Telegram {
                     let storage: DataBase.LocalFileStorage = new DataBase.LocalFileStorage();
                     let chatID: number = $._chatId;
                     storage.removeSubscriber(bot, chatID);
-                    $.sendMessage('unsubscribed');
+                    bot.sendMessage(chatID, "unsubscribed");
                 }
                 get routes() { return { 'stopCommand': 'stopHandler' } }
             }
@@ -44,7 +49,35 @@ module Telegram {
         }
 
         public sendMessage(chatID: number, msg: string) {
-            this.tg.api.sendMessage(chatID, msg);
+            this.outbox.push(new Message(chatID, msg));
+            this.tryToSendMessage();
+        }
+
+        private tryToSendMessage() {
+            if (this.outbox.length === 0) return;
+            
+            if (this.timeLastMessageSent.getTime() + Telegram.Bot.minTimeBetweenMessages < Date.now()) {
+                this.timeLastMessageSent = new Date();
+                let message: Message = this.outbox.shift();
+                this.tg.api.sendMessage(message.getChatID(), message.getMsg());
+            }
+            else {
+                setTimeout(this.tryToSendMessage, Telegram.Bot.minTimeBetweenMessages);
+            }
+        }
+
+
+    }
+
+    class Message {
+        constructor(private chatID: number, private msg: string) { }
+        
+        public getChatID(): number {
+            return this.chatID;
+        }
+
+        public getMsg(): string {
+            return this.msg;
         }
     }
 }

@@ -32,11 +32,9 @@ module SpotifyArtistWatch {
                 comparator.save();
                 if (addedAlbums.length !== 0) {
                     console.log("new albums found");
-                }
-                addedAlbums.map(async (album: Spotify.Album) => {
-                    let notification: Notification.Album = new Notification.Album(App.bot, album);
+                    let notification: Notification.Album = new Notification.Album(App.bot, addedAlbums);
                     await notification.broadcast();
-                });
+                }
             });
         }
 
