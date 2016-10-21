@@ -15,6 +15,7 @@ var Spotify;
     class Artist {
         constructor(artistID) {
             this.artistID = artistID;
+            this.albums = new Array();
         }
         getAlbums() {
             return this.albums;
@@ -41,6 +42,7 @@ var Spotify;
     Spotify.Artist = Artist;
     class AlbumArrayDownloader {
         constructor(artistID) {
+            this.artistID = artistID;
             this.downloaded = new Array();
             this.offset = 0;
             this.artistURL = AlbumArrayDownloader.getAlbumURL(artistID);

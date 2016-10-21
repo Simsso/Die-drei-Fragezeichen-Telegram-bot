@@ -7,11 +7,11 @@ module Spotify {
     "use strict";
 
     export class Artist {
-        private albums: Array<Album>;
+        private albums: Album[] = new Array<Album>();
         
         constructor(private artistID: string) { }
 
-        public getAlbums():Album[] {
+        public getAlbums(): Album[] {
             return this.albums;
         }
 
@@ -25,7 +25,7 @@ module Spotify {
         }
 
         public async downloadAlbums() {
-            let downloader = new AlbumArrayDownloader(this.artistID);
+            let downloader: AlbumArrayDownloader = new AlbumArrayDownloader(this.artistID);
             try {
                 this.albums = await downloader.run();
             }
@@ -36,11 +36,11 @@ module Spotify {
     }
 
     class AlbumArrayDownloader {
-        private downloaded = new Array<Album>();
+        private downloaded: Album[] = new Array<Album>();
         private offset: number = 0;
         private artistURL: string;
 
-        constructor(artistID: string) {
+        constructor(private artistID: string) {
             this.artistURL = AlbumArrayDownloader.getAlbumURL(artistID);
         }
 
