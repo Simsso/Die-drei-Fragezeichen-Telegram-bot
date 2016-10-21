@@ -12,7 +12,7 @@ module SpotifyArtistWatch {
         public static main() {
             console.log("running");
 
-            App.startBot();
+            App.startBot(this.watchedArtists[0]);
 
             var CronJob = require('cron').CronJob;
             var job = new CronJob({
@@ -38,14 +38,14 @@ module SpotifyArtistWatch {
                         if (aNr < bNr || isNaN(aNr) && isNaN(bNr)) return -1;
                         else return 1;
                     });
-                    let notification: Notification.Album = new Notification.Album(App.bot, addedAlbums);
+                    let notification: Notification.Album = new Notification.Album(App.bot, addedAlbums, Notification.Type.NowAvailable);
                     await notification.broadcast();
                 }
             });
         }
 
-        public static startBot() {
-            this.bot = new Telegram.Bot("DieDreiFragezeichenBot", Secret.DieDreiFragezeichenBotToken);
+        public static startBot(artistID: string) {
+            this.bot = new Telegram.Bot("DieDreiFragezeichenBot", Secret.DieDreiFragezeichenBotToken, artistID);
         }
     }
     

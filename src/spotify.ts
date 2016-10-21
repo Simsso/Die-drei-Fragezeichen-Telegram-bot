@@ -11,8 +11,13 @@ module Spotify {
         
         constructor(private artistID: string) { }
 
-        public getAlbums() {
+        public getAlbums():Album[] {
             return this.albums;
+        }
+
+        public getRandomAlbum(): Album {
+            let index: number = Math.floor(Math.random() * this.albums.length);
+            return this.albums[index];
         }
 
         public getID(): string {

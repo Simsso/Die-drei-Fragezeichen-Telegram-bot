@@ -5,12 +5,32 @@
 module Notification {
     "use strict";
 
+    export enum Type {
+        NowAvailable,
+        CheckThatOne
+    }
+
     export class Album {
-        constructor(private bot: Telegram.Bot, private albums: Spotify.Album[]) { }
+        private static nowAvailableTexts: string[] = [
+            'How about',
+            'Check that',
+            'Do you like',
+            'Try',
+            'Maybe that one',
+            'Check that one',
+            'Here you go',
+            'Here',
+            'Let\'s go',
+            'Try that',
+            'You are welcome',
+            'It\'s a pleasure',
+            'One of my favorites'];
+
+        constructor(private bot: Telegram.Bot, private albums: Spotify.Album[], private type: Notification.Type) { }
 
         public async sendTo(chatID: number) {
             for (let i = 0; i < this.albums.length; i++) {
-                let message: string = Album.getMessageByAlbum(this.albums[i]);
+                let message: string = Album.getMessageByAlbum(this.albums[i], this.type);
                 this.bot.sendMessage(chatID, message);
             }
         }
@@ -24,8 +44,13 @@ module Notification {
             }
         }
 
-        private static getMessageByAlbum(album: Spotify.Album): string {
-            return album.name + ' is now available: ' + album.spotifyExternalURL;
+        private static getMessageByAlbum(album: Spotify.Album, type: Type): string {
+            switch (type) {
+                case Type.CheckThatOne:
+                    return this.nowAvailableTexts[Math.floor(Math.random() * this.nowAvailableTexts.length)] + ': ' + album.name + ' ' + album.spotifyExternalURL;
+                default: 
+                    return album.name + ' is now available: ' + album.spotifyExternalURL;
+                }
         }
     }
 

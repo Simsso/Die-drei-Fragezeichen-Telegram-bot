@@ -13,7 +13,11 @@ module Telegram {
         private timeLastMessageSent: Date = new Date();
         private static minTimeBetweenMessages: number = 1000; // milliseconds
 
-        constructor(private name: string, private token: string) {
+        public artist: Spotify.Artist;
+
+        constructor(private name: string, private token: string, artistID: string) {
+            this.artist = new Spotify.Artist(artistID);
+
             const Telegram = require('telegram-node-bot')
             const TelegramBaseController = Telegram.TelegramBaseController
             const TextCommand = Telegram.TextCommand
@@ -59,10 +63,21 @@ module Telegram {
                 get routes() { return { 'helpCommand': 'helpHandler' } }
             }
 
+            class RandomController extends TelegramBaseController {
+                async randomHandler($) {
+                    let chatID: number = $._chatId;
+                    await bot.artist.downloadAlbums();
+                    let notification = new Notification.Album(bot, [bot.artist.getRandomAlbum()], Notification.Type.CheckThatOne);
+                    notification.sendTo(chatID);
+                }
+                get routes() { return { 'randomCommand': 'randomHandler' } }
+            }
+
             this.tg.router.when(new TextCommand('start', 'startCommand'), new StartController())
                 .when(new TextCommand('stop', 'stopCommand'), new StopController())
                 .when(new TextCommand('debug', 'debugCommand'), new DebugController())
                 .when(new TextCommand('help', 'helpCommand'), new HelpController())
+                .when(new TextCommand('random', 'randomCommand'), new RandomController())
                 .otherwise(new StartController());
         }
 

@@ -19,6 +19,10 @@ var Spotify;
         getAlbums() {
             return this.albums;
         }
+        getRandomAlbum() {
+            let index = Math.floor(Math.random() * this.albums.length);
+            return this.albums[index];
+        }
         getID() {
             return this.artistID;
         }
@@ -136,11 +140,12 @@ var Telegram;
 (function (Telegram_1) {
     'use strict';
     class Bot {
-        constructor(name, token) {
+        constructor(name, token, artistID) {
             this.name = name;
             this.token = token;
             this.outbox = new Array();
             this.timeLastMessageSent = new Date();
+            this.artist = new Spotify.Artist(artistID);
             const Telegram = require('telegram-node-bot');
             const TelegramBaseController = Telegram.TelegramBaseController;
             const TextCommand = Telegram.TextCommand;
@@ -181,10 +186,22 @@ var Telegram;
                 }
                 get routes() { return { 'helpCommand': 'helpHandler' }; }
             }
+            class RandomController extends TelegramBaseController {
+                randomHandler($) {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        let chatID = $._chatId;
+                        yield bot.artist.downloadAlbums();
+                        let notification = new Notification.Album(bot, [bot.artist.getRandomAlbum()], Notification.Type.CheckThatOne);
+                        notification.sendTo(chatID);
+                    });
+                }
+                get routes() { return { 'randomCommand': 'randomHandler' }; }
+            }
             this.tg.router.when(new TextCommand('start', 'startCommand'), new StartController())
                 .when(new TextCommand('stop', 'stopCommand'), new StopController())
                 .when(new TextCommand('debug', 'debugCommand'), new DebugController())
                 .when(new TextCommand('help', 'helpCommand'), new HelpController())
+                .when(new TextCommand('random', 'randomCommand'), new RandomController())
                 .otherwise(new StartController());
         }
         getName() {
@@ -422,15 +439,21 @@ var SpotifyArtistWatch;
 var Notification;
 (function (Notification) {
     "use strict";
+    (function (Type) {
+        Type[Type["NowAvailable"] = 0] = "NowAvailable";
+        Type[Type["CheckThatOne"] = 1] = "CheckThatOne";
+    })(Notification.Type || (Notification.Type = {}));
+    var Type = Notification.Type;
     class Album {
-        constructor(bot, albums) {
+        constructor(bot, albums, type) {
             this.bot = bot;
             this.albums = albums;
+            this.type = type;
         }
         sendTo(chatID) {
             return __awaiter(this, void 0, void 0, function* () {
                 for (let i = 0; i < this.albums.length; i++) {
-                    let message = Album.getMessageByAlbum(this.albums[i]);
+                    let message = Album.getMessageByAlbum(this.albums[i], this.type);
                     this.bot.sendMessage(chatID, message);
                 }
             });
@@ -444,10 +467,29 @@ var Notification;
                 }
             });
         }
-        static getMessageByAlbum(album) {
-            return album.name + ' is now available: ' + album.spotifyExternalURL;
+        static getMessageByAlbum(album, type) {
+            switch (type) {
+                case Type.CheckThatOne:
+                    return this.nowAvailableTexts[Math.floor(Math.random() * this.nowAvailableTexts.length)] + ': ' + album.name + ' ' + album.spotifyExternalURL;
+                default:
+                    return album.name + ' is now available: ' + album.spotifyExternalURL;
+            }
         }
     }
+    Album.nowAvailableTexts = [
+        'How about',
+        'Check that',
+        'Do you like',
+        'Try',
+        'Maybe that one',
+        'Check that one',
+        'Here you go',
+        'Here',
+        'Let\'s go',
+        'Try that',
+        'You are welcome',
+        'It\'s a pleasure',
+        'One of my favorites'];
     Notification.Album = Album;
     function delay(ms) {
         return new Promise((resolve, reject) => {
@@ -465,7 +507,7 @@ var SpotifyArtistWatch;
     class App {
         static main() {
             console.log("running");
-            App.startBot();
+            App.startBot(this.watchedArtists[0]);
             var CronJob = require('cron').CronJob;
             var job = new CronJob({
                 cronTime: '00 0 0-23 * * *',
@@ -492,14 +534,14 @@ var SpotifyArtistWatch;
                             else
                                 return 1;
                         });
-                        let notification = new Notification.Album(App.bot, addedAlbums);
+                        let notification = new Notification.Album(App.bot, addedAlbums, Notification.Type.NowAvailable);
                         yield notification.broadcast();
                     }
                 }));
             });
         }
-        static startBot() {
-            this.bot = new Telegram.Bot("DieDreiFragezeichenBot", Secret.DieDreiFragezeichenBotToken);
+        static startBot(artistID) {
+            this.bot = new Telegram.Bot("DieDreiFragezeichenBot", Secret.DieDreiFragezeichenBotToken, artistID);
         }
     }
     App.watchedArtists = ["3meJIgRw7YleJrmbpbJK6S"];
