@@ -25,7 +25,6 @@ module SpotifyArtistWatch {
         }
 
         public static async checkForChanges() {
-            console.log("checking for changes");
             App.watchedArtists.map(async (artistID: string) => {
                 let comparator = new Comparator(artistID);
                 await comparator.compare();
@@ -40,6 +39,9 @@ module SpotifyArtistWatch {
                     });
                     let notification: Notification.Album = new Notification.Album(App.bot, addedAlbums, Notification.Type.NowAvailable);
                     await notification.broadcast();
+                }
+                else {
+                    console.log("no new albums found");
                 }
             });
         }
