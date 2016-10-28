@@ -521,7 +521,6 @@ var SpotifyArtistWatch;
         }
         static checkForChanges() {
             return __awaiter(this, void 0, void 0, function* () {
-                console.log("checking for changes");
                 App.watchedArtists.map((artistID) => __awaiter(this, void 0, void 0, function* () {
                     let comparator = new SpotifyArtistWatch.Comparator(artistID);
                     yield comparator.compare();
@@ -538,6 +537,9 @@ var SpotifyArtistWatch;
                         });
                         let notification = new Notification.Album(App.bot, addedAlbums, Notification.Type.NowAvailable);
                         yield notification.broadcast();
+                    }
+                    else {
+                        console.log("no new albums found");
                     }
                 }));
             });
