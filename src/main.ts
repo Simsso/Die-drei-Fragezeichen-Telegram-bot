@@ -16,12 +16,14 @@ module SpotifyArtistWatch {
 
             var CronJob = require('cron').CronJob;
             var job = new CronJob({
-                cronTime: '00 0 0-23 * * *',
+                cronTime: '0 0 */4 * * *', // every four hours
                 onTick: App.checkForChanges.bind(this),
                 start: false
             });
-            job.start();
+
             App.checkForChanges();
+            
+            job.start();
         }
 
         public static async checkForChanges() {
