@@ -30,7 +30,7 @@ module Spotify {
                 this.albums = await downloader.run();
             }
             catch (error) {
-                console.log(error);
+                console.log("[" + new Date() + "] " + error);
             }
         }
     }
@@ -49,10 +49,9 @@ module Spotify {
         }
 
         private download(resolve, reject) {
-            //console.log("request " + this.artistURL  + '?offset=' + this.offset);
             request(this.artistURL  + '?offset=' + this.offset, (function(error, response, json) {
                 if (error) {
-                    console.log(error);
+                    console.log("[" + new Date() + "] " + error);
                     reject(error);
                     return;
                 }

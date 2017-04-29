@@ -39,6 +39,8 @@ jspm_packages
 
 # Secret data
 src/secret.ts
+/app.js
+/app.js.map
 
 # Mac specific
 .DS_STORE

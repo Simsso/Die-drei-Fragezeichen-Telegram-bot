@@ -10,7 +10,7 @@ module SpotifyArtistWatch {
         private static bot: Telegram.Bot;
 
         public static main() {
-            console.log("running");
+            console.log("["  + new Date() + "] running");
 
             App.startBot(this.watchedArtists[0]);
 
@@ -20,9 +20,8 @@ module SpotifyArtistWatch {
                 onTick: App.checkForChanges.bind(this),
                 start: false
             });
-
-            App.checkForChanges();
             
+            App.checkForChanges();
             job.start();
         }
 
@@ -33,7 +32,7 @@ module SpotifyArtistWatch {
                 let addedAlbums: Spotify.Album[] = comparator.getAddedAlbums();
                 comparator.save();
                 if (addedAlbums.length !== 0) {
-                    console.log("new albums found");
+                    console.log("[" + new Date() + "] new albums found");
                     addedAlbums.sort((a: Spotify.Album, b: Spotify.Album) => {
                         let aNr:number = a.getDieDreiFragezeichenEpisodeNumber(), bNr: number = b.getDieDreiFragezeichenEpisodeNumber();
                         if (aNr < bNr || isNaN(aNr) && isNaN(bNr)) return -1;
@@ -43,7 +42,7 @@ module SpotifyArtistWatch {
                     await notification.broadcast();
                 }
                 else {
-                    console.log("no new albums found");
+                    console.log("[" + new Date() + "] no new albums found");
                 }
             });
         }

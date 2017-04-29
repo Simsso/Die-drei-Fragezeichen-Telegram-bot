@@ -26,7 +26,7 @@ module Notification {
             'It\'s a pleasure',
             'One of my favorites'];
 
-        constructor(private bot: Telegram.Bot, private albums: Spotify.Album[], private type: Notification.Type) { }
+        constructor(private bot: Telegram.Bot, private albums: Spotify.Album[], private type: Type) { }
 
         public async sendTo(chatID: number) {
             for (let i = 0; i < this.albums.length; i++) {

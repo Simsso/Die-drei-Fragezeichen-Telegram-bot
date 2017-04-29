@@ -97,7 +97,7 @@ module Telegram {
                 this.timeLastMessageSent = new Date();
                 let message: Message = this.outbox.shift();
                 this.tg.api.sendMessage(message.getChatID(), message.getMsg());
-                console.log(this.timeLastMessageSent.getTime() + ": message to " + message.getChatID() + " sent: " + message.getMsg());
+                console.log("[" + this.timeLastMessageSent + "] message to " + message.getChatID() + " sent: " + message.getMsg());
             }
             else {
                 setTimeout(this.tryToSendMessage.bind(this), Telegram.Bot.minTimeBetweenMessages);
