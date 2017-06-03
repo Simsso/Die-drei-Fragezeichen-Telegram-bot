@@ -82,7 +82,8 @@ module Spotify {
         }
 
         public static getAlbumURL(artistID: string): string {
-            return "https://api.spotify.com/v1/artists/" + artistID + "/albums";
+            return "https://timodenk.com/api/spotify/v1/artists/" + artistID + "/albums";
+            //return "https://api.spotify.com/v1/artists/" + artistID + "/albums";
         }
     }
 
